@@ -33,6 +33,8 @@ services:
       - ${SSL_PRIVATE_KEY_PATH}:/etc/ssl/private/application.key
       - ${SOURCE_PATH}:/var/www/html
       - ${SHARED_PATH}/application/var/attachment:/var/www/html/var/attachment
+    environment:
+      PROJECT_NAME: ${PROJECT_NAME}
     restart: always
 
   project_application:
