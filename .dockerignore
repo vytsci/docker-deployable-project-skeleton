@@ -6,7 +6,6 @@
 /.shared
 /.build
 /.git
-/.env
 /CHANGELOG.md
 /LICENSE
 /README.md

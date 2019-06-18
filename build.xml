@@ -35,13 +35,10 @@
         <fail unless="env.SHARED_PATH" message="SHARED_PATH is not set on your environment"/>
         <fail unless="env.SSL_CERT_PATH" message="SSL_CERT_PATH is not set on your environment"/>
         <fail unless="env.SSL_PRIVATE_KEY_PATH" message="SSL_PRIVATE_KEY_PATH is not set on your environment"/>
-        <fail unless="env.ENVIRONMENT" message="ENVIRONMENT is not set on your environment"/>
         <fail unless="env.MYSQL_ROOT_PASSWORD" message="MYSQL_ROOT_PASSWORD is not set on your environment"/>
         <fail unless="env.MYSQL_USER" message="MYSQL_USER is not set on your environment"/>
         <fail unless="env.MYSQL_PASSWORD" message="MYSQL_PASSWORD is not set on your environment"/>
         <fail unless="env.MYSQL_DATABASE" message="MYSQL_DATABASE is not set on your environment"/>
-        <fail unless="env.DATABASE_HOST" message="DATABASE_HOST is not set on your environment"/>
-        <fail unless="env.DATABASE_PORT" message="DATABASE_PORT is not set on your environment"/>
 
         <copy file="./.env.dist" tofile="./.env" overwrite="true">
             <filterchain>
@@ -59,12 +56,6 @@
                     <token key="HOST_USER" value="${env.SSH_USER}"/>
                     <token key="HOST_UID" value="${env.HOST_UID}"/>
                     <token key="HOST_GID" value="${env.HOST_GID}"/>
-                    <token key="ENVIRONMENT" value="${env.ENVIRONMENT}"/>
-                    <token key="DATABASE_HOST" value="${env.DATABASE_HOST}"/>
-                    <token key="DATABASE_PORT" value="${env.DATABASE_PORT}"/>
-                    <token key="DATABASE_NAME" value="${env.MYSQL_DATABASE}"/>
-                    <token key="DATABASE_USER" value="${env.MYSQL_USER}"/>
-                    <token key="DATABASE_PASSWORD" value="${env.MYSQL_PASSWORD}"/>
                 </replacetokens>
             </filterchain>
         </copy>
