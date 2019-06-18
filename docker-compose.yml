@@ -1,0 +1,76 @@
+version: '3.6'
+
+services:
+  project_server_database:
+    image: project/server_database:latest
+    container_name: project_server_database
+    networks:
+      - project_default
+    ports:
+      - 3306:3306
+    volumes:
+      - ${SOURCE_PATH}/.docker/config/database/application.cnf:/etc/mysql/conf.d/application.cnf
+      - ${SOURCE_PATH}/.docker/config/database/dump.sql:/docker-entrypoint-initdb.d/dump.sql
+      - ${SHARED_PATH}/database:/var/lib/mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+    restart: always
+
+  project_server_web:
+    image: project/server_web:latest
+    container_name: project_server_web
+    networks:
+      - project_default
+    ports:
+      - 80:80
+      - 443:443
+    volumes:
+      - ${SOURCE_PATH}/.docker/config/web/apache2/sites-available/application.conf:/etc/apache2/sites-enabled/application.conf
+      - ${SSL_CERT_PATH}:/etc/ssl/certs/application.crt
+      - ${SSL_PRIVATE_KEY_PATH}:/etc/ssl/private/application.key
+      - ${SOURCE_PATH}:/var/www/html
+      - ${SHARED_PATH}/application/var/attachment:/var/www/html/var/attachment
+    restart: always
+
+  project_application:
+    image: project/application:latest
+    container_name: project_application
+    build:
+      context: ./
+      dockerfile: Dockerfile
+      args:
+        HOST_USER: ${HOST_USER}
+        HOST_UID: ${HOST_UID}
+        HOST_GID: ${HOST_GID}
+    networks:
+      - project_default
+    volumes:
+      - ${SOURCE_PATH}/.docker/config/php-fpm.d/www.conf:/usr/local/etc/php-fpm.d/www.conf
+      - ${SOURCE_PATH}:/var/www/html
+      - ${SHARED_PATH}/log:/home/${HOST_USER}/log/supervisor
+      - ${SHARED_PATH}/application/vendor:/var/www/html/vendor # This will increase deployment speed drastically
+    environment:
+      PROJECT_DOMAIN: ${PROJECT_DOMAIN}
+      XDEBUG_CONFIG: ${XDEBUG_CONFIG}
+      PHP_IDE_CONFIG: 'serverName=${PROJECT_DOMAIN}'
+      SOURCE_PATH: ${SOURCE_PATH}
+      SHARED_PATH: ${SHARED_PATH}
+      HOST_USER: ${HOST_USER}
+      HOST_UID: ${HOST_UID}
+      HOST_GID: ${HOST_GID}
+      ENVIRONMENT: ${ENVIRONMENT}
+      DATABASE_HOST: ${DATABASE_HOST}
+      DATABASE_PORT: ${DATABASE_PORT}
+      DATABASE_NAME: ${DATABASE_NAME}
+      DATABASE_USER: ${DATABASE_USER}
+      DATABASE_PASSWORD: ${DATABASE_PASSWORD}
+    depends_on:
+      - project_server_database
+      - project_server_web
+
+networks:
+  project_default:
+    name: project_default

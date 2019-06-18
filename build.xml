@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<project name="Application" default="build">
+    <property name="build" value="1" override="true"/>
+    <property name="environment" value="prod" override="true"/>
+
+    <!---
+        Main build executor
+    -->
+    <target name="build">
+        <phingcall target="build:environment"/>
+
+        <mkdir dir="build" />
+        <tar destfile="./.build/${env.BITBUCKET_BUILD_NUMBER}.tar.gz" compression="gzip">
+            <fileset dir=".">
+                <include name="*" />
+                <exclude name="build"/>
+            </fileset>
+        </tar>
+
+        <echo msg="Build process is done."/>
+    </target>
+
+    <!---
+        Build environment
+    -->
+    <target name="build:environment" hidden="true">
+        <echo msg="Building ${env.ENVIRONMENT} environment..."/>
+
+        <fail unless="env.PROJECT_DOMAIN" message="PROJECT_DOMAIN is not set on your environment"/>
+        <fail unless="env.XDEBUG_CONFIG" message="XDEBUG_CONFIG is not set on your environment"/>
+        <fail unless="env.SSH_USER" message="SSH_USER is not set on your environment"/>
+        <fail unless="env.HOST_UID" message="HOST_UID is not set on your environment"/>
+        <fail unless="env.HOST_GID" message="HOST_GID is not set on your environment"/>
+        <fail unless="env.SHARED_PATH" message="SHARED_PATH is not set on your environment"/>
+        <fail unless="env.SSL_CERT_PATH" message="SSL_CERT_PATH is not set on your environment"/>
+        <fail unless="env.SSL_PRIVATE_KEY_PATH" message="SSL_PRIVATE_KEY_PATH is not set on your environment"/>
+        <fail unless="env.ENVIRONMENT" message="ENVIRONMENT is not set on your environment"/>
+        <fail unless="env.MYSQL_ROOT_PASSWORD" message="MYSQL_ROOT_PASSWORD is not set on your environment"/>
+        <fail unless="env.MYSQL_USER" message="MYSQL_USER is not set on your environment"/>
+        <fail unless="env.MYSQL_PASSWORD" message="MYSQL_PASSWORD is not set on your environment"/>
+        <fail unless="env.MYSQL_DATABASE" message="MYSQL_DATABASE is not set on your environment"/>
+        <fail unless="env.DATABASE_HOST" message="DATABASE_HOST is not set on your environment"/>
+        <fail unless="env.DATABASE_PORT" message="DATABASE_PORT is not set on your environment"/>
+
+        <copy file="./.env.dist" tofile="./.env" overwrite="true">
+            <filterchain>
+                <replacetokens begintoken="##" endtoken="##">
+                    <token key="MYSQL_ROOT_PASSWORD" value="${env.MYSQL_ROOT_PASSWORD}"/>
+                    <token key="MYSQL_USER" value="${env.MYSQL_USER}"/>
+                    <token key="MYSQL_PASSWORD" value="${env.MYSQL_PASSWORD}"/>
+                    <token key="MYSQL_DATABASE" value="${env.MYSQL_DATABASE}"/>
+                    <token key="PROJECT_DOMAIN" value="${env.PROJECT_DOMAIN}"/>
+                    <token key="XDEBUG_CONFIG" value="${env.XDEBUG_CONFIG}"/>
+                    <token key="SOURCE_PATH" value="${env.DEPLOY_PATH}/.build/${build}"/>
+                    <token key="SHARED_PATH" value="${env.SHARED_PATH}"/>
+                    <token key="SSL_CERT_PATH" value="${env.SSL_CERT_PATH}"/>
+                    <token key="SSL_PRIVATE_KEY_PATH" value="${env.SSL_PRIVATE_KEY_PATH}"/>
+                    <token key="HOST_USER" value="${env.SSH_USER}"/>
+                    <token key="HOST_UID" value="${env.HOST_UID}"/>
+                    <token key="HOST_GID" value="${env.HOST_GID}"/>
+                    <token key="ENVIRONMENT" value="${env.ENVIRONMENT}"/>
+                    <token key="DATABASE_HOST" value="${env.DATABASE_HOST}"/>
+                    <token key="DATABASE_PORT" value="${env.DATABASE_PORT}"/>
+                    <token key="DATABASE_NAME" value="${env.MYSQL_DATABASE}"/>
+                    <token key="DATABASE_USER" value="${env.MYSQL_USER}"/>
+                    <token key="DATABASE_PASSWORD" value="${env.MYSQL_PASSWORD}"/>
+                </replacetokens>
+            </filterchain>
+        </copy>
+    </target>
+</project>
