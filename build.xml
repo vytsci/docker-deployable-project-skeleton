@@ -11,7 +11,7 @@
         <phingcall target="build:environment"/>
 
         <mkdir dir="build" />
-        <tar destfile="./.build/${env.BITBUCKET_BUILD_NUMBER}.tar.gz" compression="gzip">
+        <tar destfile="./.build/${env.BUILD}.tar.gz" compression="gzip">
             <fileset dir=".">
                 <include name="*" />
                 <exclude name="build"/>
@@ -35,10 +35,7 @@
         <fail unless="env.SHARED_PATH" message="SHARED_PATH is not set on your environment"/>
         <fail unless="env.SSL_CERT_PATH" message="SSL_CERT_PATH is not set on your environment"/>
         <fail unless="env.SSL_PRIVATE_KEY_PATH" message="SSL_PRIVATE_KEY_PATH is not set on your environment"/>
-        <fail unless="env.MYSQL_ROOT_PASSWORD" message="MYSQL_ROOT_PASSWORD is not set on your environment"/>
-        <fail unless="env.MYSQL_USER" message="MYSQL_USER is not set on your environment"/>
-        <fail unless="env.MYSQL_PASSWORD" message="MYSQL_PASSWORD is not set on your environment"/>
-        <fail unless="env.MYSQL_DATABASE" message="MYSQL_DATABASE is not set on your environment"/>
+        <fail unless="env.ENVIRONMENT" message="ENVIRONMENT is not set on your environment"/>
 
         <copy file="./.env.dist" tofile="./.env" overwrite="true">
             <filterchain>
@@ -48,7 +45,6 @@
                     <token key="MYSQL_PASSWORD" value="${env.MYSQL_PASSWORD}"/>
                     <token key="MYSQL_DATABASE" value="${env.MYSQL_DATABASE}"/>
                     <token key="PROJECT_DOMAIN" value="${env.PROJECT_DOMAIN}"/>
-                    <token key="XDEBUG_CONFIG" value="${env.XDEBUG_CONFIG}"/>
                     <token key="SOURCE_PATH" value="${env.DEPLOY_PATH}/.build/${build}"/>
                     <token key="SHARED_PATH" value="${env.SHARED_PATH}"/>
                     <token key="SSL_CERT_PATH" value="${env.SSL_CERT_PATH}"/>
@@ -56,6 +52,15 @@
                     <token key="HOST_USER" value="${env.SSH_USER}"/>
                     <token key="HOST_UID" value="${env.HOST_UID}"/>
                     <token key="HOST_GID" value="${env.HOST_GID}"/>
+                    <token key="ENVIRONMENT" value="${env.ENVIRONMENT}"/>
+                </replacetokens>
+            </filterchain>
+        </copy>
+
+        <copy file="./docker-application.env.dist" tofile="./docker-application.env" overwrite="true">
+            <filterchain>
+                <replacetokens begintoken="##" endtoken="##">
+                    <token key="XDEBUG_CONFIG" value="${env.XDEBUG_CONFIG}"/>
                 </replacetokens>
             </filterchain>
         </copy>

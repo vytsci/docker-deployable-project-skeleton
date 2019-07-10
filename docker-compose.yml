@@ -1,11 +1,11 @@
 version: '3.6'
 
 services:
-  project_server_database:
-    image: project/server_database:latest
-    container_name: project_server_database
+  projectname_server_database:
+    image: registry.gitlab.com/vytsci/auto4d/server/database:latest
+    container_name: projectname_server_database
     networks:
-      - project_default
+      - projectname_default
     ports:
       - 3306:3306
     volumes:
@@ -19,11 +19,11 @@ services:
       MYSQL_DATABASE: ${MYSQL_DATABASE}
     restart: always
 
-  project_server_web:
-    image: project/server_web:latest
-    container_name: project_server_web
+  projectname_server_web:
+    image: registry.gitlab.com/vytsci/auto4d/server/web:latest
+    container_name: projectname_server_web
     networks:
-      - project_default
+      - projectname_default
     ports:
       - 80:80
       - 443:443
@@ -32,14 +32,24 @@ services:
       - ${SSL_CERT_PATH}:/etc/ssl/certs/application.crt
       - ${SSL_PRIVATE_KEY_PATH}:/etc/ssl/private/application.key
       - ${SOURCE_PATH}:/var/www/html
-      - ${SHARED_PATH}/application/var/attachment:/var/www/html/var/attachment
+      - ${SHARED_PATH}/application/storage/app:/var/www/html/storage/app
+      - ${SHARED_PATH}/application/storage/logs:/var/www/html/storage/logs
     environment:
       PROJECT_NAME: ${PROJECT_NAME}
     restart: always
 
-  project_application:
-    image: project/application:latest
-    container_name: project_application
+  projectname_server_redis:
+    image: redis:5.0
+    container_name: projectname_server_redis
+    networks:
+      - projectname_default
+    ports:
+      - 6379:6379
+    restart: always
+
+  projectname_application:
+    image: auto4d/application:latest
+    container_name: projectname_application
     build:
       context: ./
       dockerfile: Dockerfile
@@ -48,25 +58,30 @@ services:
         HOST_UID: ${HOST_UID}
         HOST_GID: ${HOST_GID}
     networks:
-      - project_default
+      - projectname_default
     volumes:
       - ${SOURCE_PATH}/.docker/config/php-fpm.d/www.conf:/usr/local/etc/php-fpm.d/www.conf
       - ${SOURCE_PATH}:/var/www/html
       - ${SHARED_PATH}/log:/home/${HOST_USER}/log/supervisor
       - ${SHARED_PATH}/application/vendor:/var/www/html/vendor # This will increase deployment speed drastically
+      - ${SHARED_PATH}/application/storage/app:/var/www/html/storage/app
+      - ${SHARED_PATH}/application/storage/logs:/var/www/html/storage/logs
     environment:
+      PROJECT_NAME: ${PROJECT_NAME}
       PROJECT_DOMAIN: ${PROJECT_DOMAIN}
-      XDEBUG_CONFIG: ${XDEBUG_CONFIG}
-      PHP_IDE_CONFIG: 'serverName=${PROJECT_DOMAIN}'
       SOURCE_PATH: ${SOURCE_PATH}
       SHARED_PATH: ${SHARED_PATH}
       HOST_USER: ${HOST_USER}
       HOST_UID: ${HOST_UID}
       HOST_GID: ${HOST_GID}
+      ENVIRONMENT: ${ENVIRONMENT}
+      PHP_IDE_CONFIG: 'serverName=${PROJECT_DOMAIN}'
+    env_file: docker-application.env
     depends_on:
-      - project_server_database
-      - project_server_web
+      - projectname_server_database
+      - projectname_server_web
+      - projectname_server_redis
 
 networks:
-  project_default:
-    name: project_default
+  projectname_default:
+    name: projectname_default

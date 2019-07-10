@@ -1,4 +1,4 @@
-FROM project/base:latest
+FROM registry.gitlab.com/vytsci/auto4d/base:latest
 
 ARG HOST_USER
 ARG HOST_UID
