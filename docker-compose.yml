@@ -2,7 +2,7 @@ version: '3.6'
 
 services:
   projectname_server_database:
-    image: registry.gitlab.com/vytsci/auto4d/server/database:latest
+    image: registry.gitlab.com/vytsci/projectname/server/database:latest
     container_name: projectname_server_database
     networks:
       - projectname_default
@@ -20,7 +20,7 @@ services:
     restart: always
 
   projectname_server_web:
-    image: registry.gitlab.com/vytsci/auto4d/server/web:latest
+    image: registry.gitlab.com/vytsci/projectname/server/web:latest
     container_name: projectname_server_web
     networks:
       - projectname_default
@@ -48,7 +48,7 @@ services:
     restart: always
 
   projectname_application:
-    image: auto4d/application:latest
+    image: projectname/application:latest
     container_name: projectname_application
     build:
       context: ./
