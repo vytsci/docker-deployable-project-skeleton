@@ -1,4 +1,4 @@
-FROM registry.gitlab.com/vytsci/projectname/base:latest
+FROM yourdockerregistrey/projectname/base:latest
 
 ARG HOST_USER
 ARG HOST_UID
@@ -25,8 +25,8 @@ RUN touch /home/${HOST_USER}/log/php-fpm.log
 RUN chown ${HOST_USER}:${HOST_USER} /home/${HOST_USER}/log/php-fpm.log
 
 # Prepare directories
-RUN mkdir -p /var/www/html
-WORKDIR /var/www/html
+RUN mkdir -p /usr/local/apache2/htdocs
+WORKDIR /usr/local/apache2/htdocs
 
 # Warmup should be done on build time, but ORO requires database to be available
 ENTRYPOINT ["./docker-entrypoint.sh"]

@@ -22,6 +22,7 @@ RUN apt-get -y install libpq-dev
 RUN apt-get -y install nodejs
 RUN apt-get -y install yarn
 RUN apt-get -y install git
+RUN apt-get -y install netcat
 
 # Clean up all the mess
 RUN apt-get clean; rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* /usr/share/doc/*
@@ -34,7 +35,9 @@ COPY ./config/supervisor/supervisord.conf /etc/supervisor/supervisord.conf
 RUN docker-php-ext-configure gd --with-freetype-dir=/usr/include/ --with-jpeg-dir=/usr/include/
 RUN docker-php-ext-install -j$(nproc) pdo_mysql mysqli bcmath intl mbstring zip soap tidy opcache gd
 RUN pecl install xdebug
+RUN pecl install redis
 RUN docker-php-ext-enable xdebug
+RUN docker-php-ext-enable redis
 COPY ./config/php/7.2/php.ini $PHP_INI_DIR/php.ini
 
 # Install composer

@@ -1,0 +1,84 @@
+version: '3.6'
+
+networks:
+  projectname_default:
+    name: projectname_default
+
+services:
+  projectname_server_database:
+    image: mysql:8
+    container_name: projectname_server_database
+    networks:
+      - projectname_default
+    ports:
+      - 3306:3306
+    volumes:
+      - ./.docker/config/database/application.cnf:/etc/mysql/conf.d/application.cnf
+      - ./.docker/config/database/docker-entrypoint-initdb.d:/docker-entrypoint-initdb.d
+      - ./.docker/shared/database:/var/lib/mysql
+    environment:
+        MYSQL_ROOT_PASSWORD=Som35tr0ngR00tP44sword
+        MYSQL_USER=Som35tr0ngUs3rn4me
+        MYSQL_PASSWORD=Som35tr0ngUs3rP44sword
+        MYSQL_DATABASE=projectname
+    restart: always
+
+  projectname_server_web:
+    image: yourdockerregistrey/projectname/server/web:latest
+    container_name: projectname_server_web
+    networks:
+      - projectname_default
+    ports:
+      - 80:80
+      - 443:443
+    volumes:
+      - ./.docker/config/web/apache2/conf/httpd.conf:/usr/local/apache2/conf/httpd.conf
+      - ./.docker/config/web/apache2/conf/extra/httpd-vhosts.conf:/usr/local/apache2/conf/extra/httpd-vhosts.conf
+      - ./.docker/config/web/ssl/certs/application.crt:/etc/ssl/certs/application.crt
+      - ./.docker/config/web/ssl/private/application.key:/etc/ssl/private/application.key
+      - ./:/usr/local/apache2/htdocs
+    environment:
+      PROJECT_NAME: projectname
+    restart: always
+
+  projectname_server_redis:
+    image: redis:5.0
+    container_name: projectname_server_redis
+    networks:
+      - projectname_default
+    ports:
+      - 6379:6379
+    restart: always
+
+  projectname_application:
+    image: projectname/application:latest
+    container_name: projectname_application
+    build:
+      context: ./
+      dockerfile: Dockerfile
+      args:
+        HOST_USER: vytsci
+        HOST_UID: 1000
+        HOST_GID: 1000
+    networks:
+      - projectname_default
+    volumes:
+      - ./.docker/config/php-fpm.d/www.conf:/usr/local/etc/php-fpm.d/www.conf
+      - ./:/usr/local/apache2/htdocs
+      - ./.docker/shared/log:/home/##HOST_USER##/log/supervisor
+      - ./.docker/shared/application/vendor:/var/www/html/vendor
+    environment:
+      PROJECT_NAME: projectname
+      PROJECT_DOMAIN: projectname.dev.lt
+      SOURCE_PATH: ./
+      SHARED_PATH: ./.docker/shared/
+      HOST_USER: vytsci
+      HOST_UID: 1000
+      HOST_GID: 1000
+      ENVIRONMENT: dev
+      PHP_IDE_CONFIG: 'serverName=projectname.dev.lt'
+      XDEBUG_CONFIG=remote_enable=On remote_host=host remote_connect_back=On remote_port=9001 idekey=PHPSTORM
+    depends_on:
+      - projectname_server_database
+      - projectname_server_web
+      - projectname_server_redis

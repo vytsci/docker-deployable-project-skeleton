@@ -1,0 +1,84 @@
+version: '3.6'
+
+networks:
+  autobrisk_default:
+    name: autobrisk_default
+
+services:
+  autobrisk_server_database:
+    image: mysql:8
+    container_name: autobrisk_server_database
+    networks:
+      - autobrisk_default
+    ports:
+      - 3306:3306
+    volumes:
+      - ##SOURCE_PATH##/.docker/config/database/application.cnf:/etc/mysql/conf.d/application.cnf
+      - ##SOURCE_PATH##/.docker/config/database/docker-entrypoint-initdb.d:/docker-entrypoint-initdb.d
+      - ##SHARED_PATH##/database:/var/lib/mysql
+    environment:
+        MYSQL_ROOT_PASSWORD=##DATABASE_ROOT_PASSWORD##
+        MYSQL_USER=##DATABASE_USER##
+        MYSQL_PASSWORD=##DATABASE_PASSWORD##
+        MYSQL_DATABASE=##DATABASE_DATABASE##
+    restart: always
+
+  autobrisk_server_web:
+    image: registry.gitlab.com/vytsci/autobrisk/server/web:latest
+    container_name: autobrisk_server_web
+    networks:
+      - autobrisk_default
+    ports:
+      - 80:80
+      - 443:443
+    volumes:
+      - ##SOURCE_PATH##/.docker/config/web/apache2/conf/httpd.conf:/usr/local/apache2/conf/httpd.conf
+      - ##SOURCE_PATH##/.docker/config/web/apache2/conf/extra/httpd-vhosts.conf:/usr/local/apache2/conf/extra/httpd-vhosts.conf
+      - ##SSL_CERT_PATH##:/etc/ssl/certs/application.crt
+      - ##SSL_PRIVATE_KEY_PATH##:/etc/ssl/private/application.key
+      - ##SOURCE_PATH##:/usr/local/apache2/htdocs
+    environment:
+      PROJECT_NAME: ##PROJECT_NAME##
+    restart: always
+
+  autobrisk_server_redis:
+    image: redis:5.0
+    container_name: autobrisk_server_redis
+    networks:
+      - autobrisk_default
+    ports:
+      - 6379:6379
+    restart: always
+
+  autobrisk_application:
+    image: autobrisk/application:latest
+    container_name: autobrisk_application
+    build:
+      context: ./
+      dockerfile: Dockerfile
+      args:
+        HOST_USER: ##HOST_USER##
+        HOST_UID: ##HOST_UID##
+        HOST_GID: ##HOST_GID##
+    networks:
+      - autobrisk_default
+    volumes:
+      - ##SOURCE_PATH##/.docker/config/php-fpm.d/www.conf:/usr/local/etc/php-fpm.d/www.conf
+      - ##SOURCE_PATH##:/usr/local/apache2/htdocs
+      - ##SHARED_PATH##/log:/home/##HOST_USER##/log/supervisor
+      - ##SHARED_PATH##/application/vendor:/var/www/html/vendor # This will increase deployment speed drastically
+    environment:
+      PROJECT_NAME: ##PROJECT_NAME##
+      PROJECT_DOMAIN: ##PROJECT_DOMAIN##
+      SOURCE_PATH: ##SOURCE_PATH##
+      SHARED_PATH: ##SHARED_PATH##
+      HOST_USER: ##HOST_USER##
+      HOST_UID: ##HOST_UID##
+      HOST_GID: ##HOST_GID##
+      ENVIRONMENT: ##ENVIRONMENT##
+      PHP_IDE_CONFIG: 'serverName=##PROJECT_DOMAIN##'
+      XDEBUG_CONFIG=##XDEBUG_CONFIG##
+    depends_on:
+      - autobrisk_server_database
+      - autobrisk_server_web
+      - autobrisk_server_redis

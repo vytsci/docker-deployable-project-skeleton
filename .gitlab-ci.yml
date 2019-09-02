@@ -1,0 +1,79 @@
+image: yourdockerregistrey/projectname/runner:latest
+
+variables:
+  DOCKER_HOST: tcp://docker:2375/
+  DOCKER_DRIVER: overlay2
+  BUILD: $CI_PIPELINE_IID
+
+services:
+  - docker:dind
+
+before_script:
+  - docker info
+  - docker login -u gitlab-ci-token -p $CI_JOB_TOKEN registry.gitlab.com
+  - eval $(ssh-agent -s)
+  - bash -c 'ssh-add <(echo "$RUNNER_SSH_PRIVATE_KEY")'
+  - mkdir -p ~/.ssh
+  - chmod 700 ~/.ssh
+  - '[[ -f /.dockerenv ]] && echo -e "Host *\n\tStrictHostKeyChecking no\n\n" > ~/.ssh/config'
+
+cache:
+  key: $CI_COMMIT_REF_SLUG
+  policy: pull
+  paths:
+    - "./build"
+
+stages:
+  - build
+#  - test
+  - deploy
+
+########################################################################################################################
+## STAGE                                                                                                              ##
+########################################################################################################################
+build_stage:
+  stage: build
+  cache:
+    key: $CI_COMMIT_REF_SLUG
+    policy: push
+    paths:
+      - "./build"
+  environment:
+    name: Stage
+  script:
+    - phing -Dbuild=${BUILD}
+  only:
+    - stage
+
+#test_stage:
+#  stage: test
+#  variables:
+#    GIT_STRATEGY: none
+#  environment:
+#    name: Stage
+#  dependencies:
+#    - build_stage
+#  script:
+#    # @todo: need to setup testing here
+#    - tar -zxf ${BUILD}.tar.gz -C ./
+#    - rm ${BUILD}.tar.gz
+#  only:
+#    - stage
+
+stage_deploy:
+  stage: deploy
+  variables:
+    GIT_STRATEGY: none
+  environment:
+    name: Stage
+  dependencies:
+    - build_stage
+  #    - test_stage
+  script:
+    - ssh -p ${SSH_PORT} ${SSH_USER}@${SSH_HOST} "mkdir -p build/${BUILD}"
+    - scp -P${SSH_PORT} ./build/${BUILD}.tar.gz ${SSH_USER}@${SSH_HOST}:${DEPLOY_PATH}/build/${BUILD}.tar.gz
+    - ssh -p ${SSH_PORT} ${SSH_USER}@${SSH_HOST} "tar -xvzf ${DEPLOY_PATH}/build/${BUILD}.tar.gz -C ${DEPLOY_PATH}/build/${BUILD} && rm ${DEPLOY_PATH}/build/${BUILD}.tar.gz"
+    - ssh -p ${SSH_PORT} ${SSH_USER}@${SSH_HOST} "(docker container ls -a --filter='name=^projectname_' --format '{{.Names}}' | xargs docker rm -f) || true && docker system prune --all --force"
+    - ssh -p ${SSH_PORT} ${SSH_USER}@${SSH_HOST} "cd ${DEPLOY_PATH}/build/${BUILD} && docker-compose up -d && cd .. && (ls | grep -v "${BUILD}" | xargs rm -R) || true"
+  only:
+    - stage
